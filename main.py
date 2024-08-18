@@ -1,9 +1,10 @@
+#the libraries used
 import json
 import os
 import logging
 from difflib import get_close_matches
 
-# Setup logging
+# Setup
 logging.basicConfig(filename='music_converter.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Extended notechart with more names
@@ -126,14 +127,13 @@ def note_range():
 
 def calculate_frequency(note):
     # Calculates and displays the frequency of a given note.
-    # A simplified frequency calculation for demonstration purposes
-    # Real-world calculations require more precise formulas and context
+
     base_freq = 440  # Frequency of A4
-    # Simple formula assuming equal temperament scale and octave adjustments
-    # Note: This is an approximation
+
+
     try:
         octave = int(note.split('_')[1])
-        # Simple formula: base_freq * 2^((n - 49) / 12), where n is the note index in the scale
+        # Formula to calculate the frequency
         note_index = list(notechart.keys()).index(note) % 12
         note_freq = base_freq * 2 ** ((octave - 4 + note_index) / 12)
         print(f"The frequency of {note} is approximately {note_freq:.2f} Hz")
@@ -143,12 +143,7 @@ def calculate_frequency(note):
 
 def manage_profiles():
     # Manages user profiles for storing preferences.
-    profiles_file = 'profiles.json'
-    if os.path.exists(profiles_file):
-        with open(profiles_file, 'r') as file:
-            profiles = json.load(file)
-    else:
-        profiles = {}
+    profiles = {}
 
     print("Profile Management:")
     action = input("Type 'create' to create a new profile or 'list' to list existing profiles: ").strip().lower()
@@ -156,8 +151,6 @@ def manage_profiles():
     if action == 'create':
         profile_name = input("Enter the profile name: ").strip()
         profiles[profile_name] = notechart
-        with open(profiles_file, 'w') as file:
-            json.dump(profiles, file)
         print(f"Profile '{profile_name}' created.")
     elif action == 'list':
         print("Existing profiles:")
@@ -166,6 +159,20 @@ def manage_profiles():
     else:
         print("Invalid action.")
         logging.warning(f"Invalid action in profile management: {action}")
+
+def reset_recent_notes():
+    # Clears the recent notes list.
+    global recent_notes
+    recent_notes = []
+    print("Recent notes have been cleared.")
+
+def handle_exceptions():
+    # Handles exceptions during the execution of the main loop.
+    try:
+        main()
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        logging.error(f"Unexpected error: {e}")
 
 def main():
     # Main function to run the note converter.
@@ -192,10 +199,12 @@ def main():
             calculate_frequency(note_name)
         elif note.lower() == "profile":
             manage_profiles()
+        elif note.lower() == "reset_recent":
+            reset_recent_notes()
         elif note.lower() == "help":
             show_help()
         else:
             getnote(note, notechart)
 
 if __name__ == "__main__":
-    main()
+    handle_exceptions()
