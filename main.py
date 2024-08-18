@@ -1,7 +1,12 @@
 import json
 import os
+import logging
+from difflib import get_close_matches
 
-# Extended notechart with more namess
+# Setup logging
+logging.basicConfig(filename='music_converter.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Extended notechart with more names
 notechart = {
     "B_4": 2,  # B in 4th octave
     "C_4": 0,  # C in 4th octave
@@ -45,24 +50,31 @@ notechart = {
 recent_notes = []
 
 def getnote(note, chart):
-    """Fetches and prints the fingering for a given note."""
+    # Fetches and prints the fingering for a given note.
+    note = note.strip()
     if note in chart:
         fingering = chart[note]
-        recent_notes.append(note)  # Track the recent note
+        recent_notes.append(note)
         if len(recent_notes) > 5:
-            recent_notes.pop(0)  # Keep only the last 5 notes
+            recent_notes.pop(0)
         print(f"The fingering for {note} is {fingering}")
     else:
-        print("This note is not in the chart. Please check the note name and try again.")
+        # Fuzzy matching for similar note names
+        similar_notes = get_close_matches(note, chart.keys())
+        if similar_notes:
+            print(f"Note not found. Did you mean: {', '.join(similar_notes)}?")
+        else:
+            print("This note is not in the chart. Please check the note name and try again.")
+        logging.warning(f"Note not found: {note}")
 
 def listnotes(chart):
-    """Lists all notes and their corresponding fingerings."""
+    # Lists all notes and their corresponding fingerings.
     print("Available notes and their fingerings:")
     for note, fingering in chart.items():
         print(f"{note}: {fingering}")
 
 def show_help():
-    """Displays the help message."""
+    # Displays the help message.
     print("Trumpet Note Converter")
     print("You can enter note names to get the corresponding trumpet fingering.")
     print("Examples of valid notes include: C_4, D#_4, LowB_3, etc.")
@@ -70,11 +82,14 @@ def show_help():
     print("Type 'recent' to see recent notes.")
     print("Type 'save' to save your custom note chart.")
     print("Type 'load' to load a custom note chart.")
+    print("Type 'note_range' to see the note range.")
+    print("Type 'frequency' to calculate the frequency of a note.")
+    print("Type 'profile' to manage user profiles.")
     print("Type 'help' to see this message again.")
     print("Type 'exit' to quit the program.")
 
 def show_recent_notes():
-    """Displays the recent notes entered by the user."""
+    # Displays the recent notes entered by the user.
     if recent_notes:
         print("Recent notes:")
         for note in recent_notes:
@@ -83,13 +98,13 @@ def show_recent_notes():
         print("No recent notes.")
 
 def save_chart(filename, chart):
-    """Saves the current note chart to a file."""
+    # Saves the current note chart to a file.
     with open(filename, 'w') as file:
         json.dump(chart, file)
     print(f"Note chart saved to {filename}")
 
 def load_chart(filename):
-    """Loads a note chart from a file."""
+    # Loads a note chart from a file.
     global notechart
     if os.path.exists(filename):
         with open(filename, 'r') as file:
@@ -97,9 +112,10 @@ def load_chart(filename):
         print(f"Note chart loaded from {filename}")
     else:
         print("File not found.")
+        logging.error(f"File not found: {filename}")
 
 def note_range():
-    """Calculates and displays the note range based on the note chart."""
+    # Calculates and displays the note range based on the note chart.
     notes = list(notechart.keys())
     if notes:
         min_note = min(notes, key=lambda note: notechart[note])
@@ -108,8 +124,51 @@ def note_range():
     else:
         print("Note chart is empty.")
 
+def calculate_frequency(note):
+    # Calculates and displays the frequency of a given note.
+    # A simplified frequency calculation for demonstration purposes
+    # Real-world calculations require more precise formulas and context
+    base_freq = 440  # Frequency of A4
+    # Simple formula assuming equal temperament scale and octave adjustments
+    # Note: This is an approximation
+    try:
+        octave = int(note.split('_')[1])
+        # Simple formula: base_freq * 2^((n - 49) / 12), where n is the note index in the scale
+        note_index = list(notechart.keys()).index(note) % 12
+        note_freq = base_freq * 2 ** ((octave - 4 + note_index) / 12)
+        print(f"The frequency of {note} is approximately {note_freq:.2f} Hz")
+    except ValueError:
+        print("Invalid note format.")
+        logging.error(f"Invalid note format: {note}")
+
+def manage_profiles():
+    # Manages user profiles for storing preferences.
+    profiles_file = 'profiles.json'
+    if os.path.exists(profiles_file):
+        with open(profiles_file, 'r') as file:
+            profiles = json.load(file)
+    else:
+        profiles = {}
+
+    print("Profile Management:")
+    action = input("Type 'create' to create a new profile or 'list' to list existing profiles: ").strip().lower()
+
+    if action == 'create':
+        profile_name = input("Enter the profile name: ").strip()
+        profiles[profile_name] = notechart
+        with open(profiles_file, 'w') as file:
+            json.dump(profiles, file)
+        print(f"Profile '{profile_name}' created.")
+    elif action == 'list':
+        print("Existing profiles:")
+        for profile in profiles.keys():
+            print(profile)
+    else:
+        print("Invalid action.")
+        logging.warning(f"Invalid action in profile management: {action}")
+
 def main():
-    """Main function to run the note converter."""
+    # Main function to run the note converter.
     show_help()
     while True:
         note = input("Enter a note (or type 'help' for assistance): ").strip()
@@ -128,6 +187,11 @@ def main():
             load_chart(filename)
         elif note.lower() == "note_range":
             note_range()
+        elif note.lower() == "frequency":
+            note_name = input("Enter the note name to calculate the frequency: ").strip()
+            calculate_frequency(note_name)
+        elif note.lower() == "profile":
+            manage_profiles()
         elif note.lower() == "help":
             show_help()
         else:
