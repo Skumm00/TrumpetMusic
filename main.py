@@ -1,7 +1,10 @@
-# Extended notechart with more specific names
+import json
+import os
+
+# Extended notechart with more namess
 notechart = {
-    "B_4": 2,  #B in 4th ocatvave
-    "C_4": 0,  #C In 4th octave
+    "B_4": 2,  # B in 4th octave
+    "C_4": 0,  # C in 4th octave
     "C#_4": 123,
     "Db_4": 123,
     "D_4": 13,
@@ -18,7 +21,7 @@ notechart = {
     "Bb_4": 10,
     "HighB_4": 2,
     "HighC_4": 0,
-    "LowB_3": 2,  #B in third octave
+    "LowB_3": 2,  # B in 3rd octave
     "LowC_3": 0,
     "LowC#_3": 123,
     "LowDb_3": 123,
@@ -34,19 +37,26 @@ notechart = {
     "LowA_3": 12,
     "LowA#_3": 1,
     "LowBb_3": 10,
-    "MiddleB_4": 2,  #Middle B in 4th octave
+    "MiddleB_4": 2,  # Middle B in 4th octave
     "MiddleC_4": 0
 }
 
+# Global variable to keep track of recent notes
+recent_notes = []
+
 def getnote(note, chart):
-    #Fetches and prints the fingering for a given note
+    """Fetches and prints the fingering for a given note."""
     if note in chart:
-        print(f"The fingering for {note} is {chart[note]}")
+        fingering = chart[note]
+        recent_notes.append(note)  # Track the recent note
+        if len(recent_notes) > 5:
+            recent_notes.pop(0)  # Keep only the last 5 notes
+        print(f"The fingering for {note} is {fingering}")
     else:
         print("This note is not in the chart. Please check the note name and try again.")
 
 def listnotes(chart):
-    #Lists all notes and their corresponding fingerings
+    """Lists all notes and their corresponding fingerings."""
     print("Available notes and their fingerings:")
     for note, fingering in chart.items():
         print(f"{note}: {fingering}")
@@ -57,8 +67,46 @@ def show_help():
     print("You can enter note names to get the corresponding trumpet fingering.")
     print("Examples of valid notes include: C_4, D#_4, LowB_3, etc.")
     print("Type 'list' to see all available notes.")
+    print("Type 'recent' to see recent notes.")
+    print("Type 'save' to save your custom note chart.")
+    print("Type 'load' to load a custom note chart.")
     print("Type 'help' to see this message again.")
     print("Type 'exit' to quit the program.")
+
+def show_recent_notes():
+    """Displays the recent notes entered by the user."""
+    if recent_notes:
+        print("Recent notes:")
+        for note in recent_notes:
+            print(note)
+    else:
+        print("No recent notes.")
+
+def save_chart(filename, chart):
+    """Saves the current note chart to a file."""
+    with open(filename, 'w') as file:
+        json.dump(chart, file)
+    print(f"Note chart saved to {filename}")
+
+def load_chart(filename):
+    """Loads a note chart from a file."""
+    global notechart
+    if os.path.exists(filename):
+        with open(filename, 'r') as file:
+            notechart = json.load(file)
+        print(f"Note chart loaded from {filename}")
+    else:
+        print("File not found.")
+
+def note_range():
+    """Calculates and displays the note range based on the note chart."""
+    notes = list(notechart.keys())
+    if notes:
+        min_note = min(notes, key=lambda note: notechart[note])
+        max_note = max(notes, key=lambda note: notechart[note])
+        print(f"Note range from {min_note} to {max_note}")
+    else:
+        print("Note chart is empty.")
 
 def main():
     """Main function to run the note converter."""
@@ -70,6 +118,16 @@ def main():
             break
         elif note.lower() == "list":
             listnotes(notechart)
+        elif note.lower() == "recent":
+            show_recent_notes()
+        elif note.lower() == "save":
+            filename = input("Enter the filename to save the note chart: ").strip()
+            save_chart(filename, notechart)
+        elif note.lower() == "load":
+            filename = input("Enter the filename to load the note chart: ").strip()
+            load_chart(filename)
+        elif note.lower() == "note_range":
+            note_range()
         elif note.lower() == "help":
             show_help()
         else:
